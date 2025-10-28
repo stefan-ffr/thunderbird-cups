@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  thunderbird-cups:
+    # Verwenden Sie Ihr eigenes Image von Docker Hub oder GHCR
+    # Nach dem Build verfügbar als:
+    # - yourusername/thunderbird-cups:latest (Docker Hub)
+    # - ghcr.io/yourusername/thunderbird-cups:latest (GitHub Container Registry)
+    image: yourusername/thunderbird-cups:latest
+    
+    # Oder bauen Sie lokal:
+    # build: .
+    
+    container_name: thunderbird-cups
+    hostname: thunderbird-cups
+    restart: unless-stopped
+    
+    ports:
+      - "5800:5800"    # Thunderbird Web-Interface
+      - "5900:5900"    # VNC (optional)
+      - "631:631"      # CUPS Web-Interface
+    
+    volumes:
+      # Thunderbird-Daten (E-Mails, Einstellungen)
+      - ./data/thunderbird:/config:rw
+      
+      # Extensions
+      - ./data/extensions:/config/extensions:rw
+      
+      # CUPS-Konfiguration (Drucker bleiben erhalten)
+      - ./data/cups/config:/etc/cups:rw
+      - ./data/cups/spool:/var/spool/cups:rw
+      - ./data/cups/cache:/var/cache/cups:rw
+      - ./data/cups/logs:/var/log/cups:rw
+    
+    environment:
+      # === Benutzer-Einstellungen ===
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - UMASK=022
+      
+      # === Lokalisierung ===
+      - TZ=Europe/Zurich
+      - LANG=de_CH.UTF-8
+      
+      # === Display-Einstellungen ===
+      - DISPLAY_WIDTH=1920
+      - DISPLAY_HEIGHT=1080
+      - DARK_MODE=1
+      
+      # === Automatische Drucker-Konfiguration (optional) ===
+      # Drucker wird beim Start automatisch hinzugefügt
+      - PRINTER_NAME=Office_Drucker
+      - PRINTER_URI=ipp://192.168.1.100/ipp/print
+      - PRINTER_DESC=Bürodrucker HP LaserJet
+      - SET_DEFAULT=true
+      
+      # Weitere Drucker können manuell über CUPS Web-Interface hinzugefügt werden
+      
+      # === Thunderbird-Optionen ===
+      - KEEP_APP_RUNNING=1
+      
+      # === Sicherheit (optional, für Produktiv-Einsatz empfohlen) ===
+      # - SECURE_CONNECTION=1
+      # - WEB_AUTHENTICATION=1
+      # - WEB_AUTHENTICATION_USERNAME=admin
+      # - WEB_AUTHENTICATION_PASSWORD=IhrSicheresPasswort
+    
+    # Für Netzwerk-Drucker-Discovery
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    
+    # Health Check
+    healthcheck:
+      test: ["CMD", "lpstat", "-r"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+    
+    networks:
+      - thunderbird-net
+
+networks:
+  thunderbird-net:
+    driver: bridge
