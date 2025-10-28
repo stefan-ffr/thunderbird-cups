@@ -16,7 +16,7 @@ on:
     - cron: '0 2 * * 1'
 
 env:
-  DOCKER_HUB_IMAGE: yourusername/thunderbird-cups
+  DOCKER_HUB_IMAGE: stefan-ffr/thunderbird-cups
   GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/thunderbird-cups
 
 jobs:
