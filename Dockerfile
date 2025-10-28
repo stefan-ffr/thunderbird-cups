@@ -1,6 +1,6 @@
 FROM jlesage/thunderbird:latest
 
-LABEL maintainer="your-email@example.com"
+LABEL maintainer="stefan-ffr"
 LABEL description="Thunderbird with integrated CUPS print server"
 LABEL version="1.0"
 
@@ -8,6 +8,7 @@ LABEL version="1.0"
 USER root
 
 # CUPS und alle Druckertreiber installieren
+# Hinweis: Einige Pakete sind in Alpine nicht verfügbar oder haben andere Namen
 RUN apk add --no-cache \
     cups \
     cups-client \
@@ -16,12 +17,10 @@ RUN apk add --no-cache \
     ghostscript \
     avahi \
     avahi-tools \
-    avahi-compat-libdns_sd \
     hplip \
     gutenprint \
     foomatic-db \
     foomatic-db-engine \
-    samba-client \
     && rm -rf /var/cache/apk/*
 
 # CUPS-Verzeichnisse erstellen
@@ -49,7 +48,7 @@ RUN cp /etc/cups/cupsd.conf /etc/cups/cupsd.conf.original && \
 COPY rootfs/ /
 
 # Startup-Skript ausführbar machen
-RUN chmod +x /opt/startup-cups.sh
+RUN chmod +x /etc/cont-init.d/95-cups.sh
 
 # CUPS-Port freigeben
 EXPOSE 631
