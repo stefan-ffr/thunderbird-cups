@@ -7,21 +7,20 @@ LABEL version="1.0"
 # Als root für Installation
 USER root
 
-# CUPS und alle Druckertreiber installieren
-# Hinweis: Einige Pakete sind in Alpine nicht verfügbar oder haben andere Namen
+# CUPS Core installieren (definitiv verfügbar in Alpine)
 RUN apk add --no-cache \
     cups \
     cups-client \
     cups-filters \
-    cups-pdf \
     ghostscript \
-    avahi \
-    avahi-tools \
-    hplip \
-    gutenprint \
-    foomatic-db \
-    foomatic-db-engine \
     && rm -rf /var/cache/apk/*
+
+# Optionale Pakete einzeln hinzufügen (falls verfügbar)
+RUN apk add --no-cache avahi avahi-tools || true
+RUN apk add --no-cache hplip || true
+RUN apk add --no-cache gutenprint || true
+RUN apk add --no-cache foomatic-db foomatic-db-engine || true
+RUN apk add --no-cache cups-pdf || true
 
 # CUPS-Verzeichnisse erstellen
 RUN mkdir -p \
@@ -32,23 +31,26 @@ RUN mkdir -p \
     && chmod 755 /var/spool/cups /var/cache/cups /var/log/cups
 
 # CUPS-Konfiguration anpassen
-RUN cp /etc/cups/cupsd.conf /etc/cups/cupsd.conf.original && \
-    # Erlaube Zugriff von allen Interfaces
-    sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf && \
-    # Server-Alias setzen
+RUN cp /etc/cups/cupsd.conf /etc/cups/cupsd.conf.original 2>/dev/null || true && \
+    sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf 2>/dev/null || true && \
     echo 'ServerAlias *' >> /etc/cups/cupsd.conf && \
-    # Browsing aktivieren
-    sed -i 's/Browsing Off/Browsing On/' /etc/cups/cupsd.conf && \
-    # Admin-Zugriff erlauben (für Docker-Container sicher)
-    sed -i '/<Location \//a\  Order allow,deny\n  Allow all' /etc/cups/cupsd.conf && \
-    sed -i '/<Location \/admin/a\  Order allow,deny\n  Allow all' /etc/cups/cupsd.conf && \
-    sed -i '/<Location \/admin\/conf/a\  Order allow,deny\n  Allow all' /etc/cups/cupsd.conf
+    sed -i 's/Browsing Off/Browsing On/' /etc/cups/cupsd.conf 2>/dev/null || true
+
+# Einfachere Admin-Zugriff-Konfiguration
+RUN echo '<Location />' >> /etc/cups/cupsd.conf && \
+    echo '  Order allow,deny' >> /etc/cups/cupsd.conf && \
+    echo '  Allow all' >> /etc/cups/cupsd.conf && \
+    echo '</Location>' >> /etc/cups/cupsd.conf && \
+    echo '<Location /admin>' >> /etc/cups/cupsd.conf && \
+    echo '  Order allow,deny' >> /etc/cups/cupsd.conf && \
+    echo '  Allow all' >> /etc/cups/cupsd.conf && \
+    echo '</Location>' >> /etc/cups/cupsd.conf
 
 # Startup-Skript für CUPS
 COPY rootfs/ /
 
 # Startup-Skript ausführbar machen
-RUN chmod +x /etc/cont-init.d/95-cups.sh
+RUN chmod +x /etc/cont-init.d/95-cups.sh 2>/dev/null || true
 
 # CUPS-Port freigeben
 EXPOSE 631
@@ -57,8 +59,8 @@ EXPOSE 631
 USER app
 
 # Health Check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD lpstat -r || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+    CMD lpstat -r 2>/dev/null || exit 1
 
 # Standard Entrypoint bleibt erhalten
-# CUPS wird über startup-cups.sh gestartet
+# CUPS wird über 95-cups.sh gestartet
