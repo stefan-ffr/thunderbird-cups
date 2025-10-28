@@ -2,11 +2,10 @@ version: '3.8'
 
 services:
   thunderbird-cups:
-    # Verwenden Sie Ihr eigenes Image von Docker Hub oder GHCR
-    # Nach dem Build verfügbar als:
-    # - yourusername/thunderbird-cups:latest (Docker Hub)
-    # - ghcr.io/yourusername/thunderbird-cups:latest (GitHub Container Registry)
-    image: yourusername/thunderbird-cups:latest
+    # GitHub Container Registry (GHCR)
+    # Image verfügbar als:
+    # ghcr.io/stefan-ffr/thunderbird-cups:latest
+    image: ghcr.io/stefan-ffr/thunderbird-cups:latest
     
     # Oder bauen Sie lokal:
     # build: .
